@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html>
+	<head>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+		<title>three.js css3d - periodic table</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta property="og:title" content="three.js css3d - periodic table">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://threejs.org/examples/css3d_periodictable.html">
+		<meta property="og:image" content="https://threejs.org/examples/screenshots/css3d_periodictable.jpg">
+		
+		<style>
+			a {
+				color: #8ff;
+			}
+
+			#menu {
+				position: absolute;
+				bottom: 20px;
+				width: 100%;
+				text-align: center;
+			}
+
+			.element {
+				width: 120px;
+				height: 160px;
+				box-shadow: 0px 0px 12px rgba(0,255,255,0.5);
+				border: 1px solid rgba(127,255,255,0.25);
+				font-family: Helvetica, sans-serif;
+				text-align: center;
+				line-height: normal;
+				cursor: default;
+			}
+
+			.element:hover {
+				box-shadow: 0px 0px 12px rgba(0,255,255,0.75);
+				border: 1px solid rgba(127,255,255,0.75);
+			}
+
+				.element .number {
+					position: absolute;
+					top: 20px;
+					right: 20px;
+					font-size: 12px;
+					color: rgba(127,255,255,0.75);
+				}
+
+				.element .symbol {
+					position: absolute;
+					top: 40px;
+					left: 0px;
+					right: 0px;
+					font-size: 60px;
+					font-weight: bold;
+					color: rgba(255,255,255,0.75);
+					text-shadow: 0 0 10px rgba(0,255,255,0.95);
+				}
+
+				.element .details {
+					position: absolute;
+					bottom: 15px;
+					left: 0px;
+					right: 0px;
+					font-size: 12px;
+					color: rgba(127,255,255,0.75);
+				}
+
+			button {
+				color: rgba(127,255,255,0.75);
+				background: transparent;
+				outline: 1px solid rgba(127,255,255,0.75);
+				border: 0px;
+				padding: 5px 10px;
+				cursor: pointer;
+			}
+
+			button:hover {
+				background-color: rgba(0,255,255,0.5);
+			}
+
+			button:active {
+				color: #000000;
+				background-color: rgba(0,255,255,0.75);
+			}
+
+			body {
+                background-color: #000000;
+                margin: 0;
+                font-family: Helvetica, sans-serif;;
+                overflow: hidden;
+            }
+
+			#info {
+                position: absolute;
+                top: 10px;
+                width: 100%;
+                text-align: center;
+                color: #ffffff; /* This makes the text white */
+                z-index: 100;
+                font-family: Helvetica, sans-serif;
+            }
+		</style>
+	</head>
+	<body>
+
+		<div id="info"><a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> css3d - periodic table.</div>
+		<div id="container"></div>
+		<div id="menu">
+			<button id="table">TABLE</button>
+			<button id="sphere">SPHERE</button>
+			<button id="helix">HELIX</button>
+			<button id="grid">GRID</button>
+		</div>
+
+		<script type="importmap">
+			{
+				"imports": {
+				"three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+				"three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+				}
+			}
+		</script>
+
+		<script type="module">
+
+			import * as THREE from 'three';
+
+            import TWEEN from 'three/addons/libs/tween.module.js';
+            import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
+            import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
+
+            // ADD THESE LINES BACK IN
+            let camera, scene, renderer;
+            let controls;
+            const objects = [];
+            const targets = { table: [], sphere: [], helix: [], grid: [] };
+
+            let tableData = [];
+			// Be sure to replace this URL with the actual "Publish to web" CSV link from your Google Sheet
+			const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQnnKcqOxYWPcOGWdnx9T8sQKwJ-nGUKCgLpIw7z3LO_sNEgMkTYpX1bYPbR9LJ3xISqKuIK0BOm_74/pub?output=csv';
+
+			Papa.parse(csvUrl, {
+				download: true,
+				header: true,
+				complete: function(results) {
+					tableData = results.data;
+					console.log("Data loaded successfully:", tableData);
+					
+					// Now that data is ready, start the 3D engine
+					init();
+					animate();
+				}
+			});
+
+			function init() {
+
+				camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera.position.z = 3000;
+
+				scene = new THREE.Scene();
+
+				// table
+                for ( let i = 0; i < tableData.length; i ++ ) {
+                    const dataItem = tableData[i];
+
+                    const element = document.createElement( 'div' );
+                    element.className = 'element';
+
+                    // 1. Determine Background Color based on Net Worth
+                    // The CSV column might have leading/trailing spaces, so we use bracket notation
+                    const netWorthString = dataItem[' Net Worth '] || dataItem['Net Worth'] || "$0";
+                    // Clean the string (remove '$' and ',') and convert to a float number
+                    const netWorth = parseFloat(netWorthString.replace(/[^0-9.-]+/g, ""));
+
+                    // Apply Color Logic (Red < $100K, Orange > $100K, Green > $200K)
+                    if (netWorth < 100000) {
+                        element.style.backgroundColor = 'rgba(100, 0, 20, 0.8)'; // Dark Red
+                        element.style.border = '1px solid rgba(255, 100, 100, 0.5)';
+                    } else if (netWorth >= 100000 && netWorth <= 200000) {
+                        element.style.backgroundColor = 'rgba(100, 80, 0, 0.8)'; // Dark Orange/Olive
+                        element.style.border = '1px solid rgba(255, 200, 100, 0.5)';
+                    } else {
+                        element.style.backgroundColor = 'rgba(0, 40, 20, 0.8)'; // Dark Green
+                        element.style.border = '1px solid rgba(100, 255, 100, 0.5)';
+                    }
+
+                    // 2. Build the Card Layout (Matches Image B)
+                    element.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; padding: 5px 10px; font-size: 12px; color: rgba(255,255,255,0.8);">
+                            <span>${dataItem.Country || ''}</span>
+                            <span>${dataItem.Age || ''}</span>
+                        </div>
+                        <div style="display: flex; justify-content: center; margin-top: 5px;">
+                            <img src="${dataItem.Photo || ''}" style="width: 80px; height: 80px; object-fit: cover; border: 2px solid white; background-color: #ccc;">
+                        </div>
+                        <div style="text-align: center; color: white; font-weight: bold; margin-top: 10px; font-size: 11px;">
+                            ${dataItem.Name || ''}
+                        </div>
+                        <div style="text-align: center; color: gold; font-size: 10px; margin-top: 3px;">
+                            ${dataItem.Interest || ''}
+                        </div>
+                    `;
+
+                    // Add to 3D scene starting at random positions (for the fly-in animation)
+                    const objectCSS = new CSS3DObject( element );
+                    objectCSS.position.x = Math.random() * 4000 - 2000;
+                    objectCSS.position.y = Math.random() * 4000 - 2000;
+                    objectCSS.position.z = Math.random() * 4000 - 2000;
+                    scene.add( objectCSS );
+                    objects.push( objectCSS );
+
+                    // 3. Calculate 20x10 Table Layout Positions
+                    // Modulo 20 gives us the column (0-19), Division by 20 gives us the row (0-9)
+                    const col = i % 20;
+                    const row = Math.floor(i / 20);
+
+                    const object = new THREE.Object3D();
+                    // Multiply by spacing (140px width, 180px height) and offset to center the grid
+                    object.position.x = ( col * 140 ) - 1330; 
+                    object.position.y = - ( row * 180 ) + 810; 
+
+                    targets.table.push( object );
+                }
+
+				// sphere
+
+				const vector = new THREE.Vector3();
+
+				for ( let i = 0, l = objects.length; i < l; i ++ ) {
+
+					const phi = Math.acos( - 1 + ( 2 * i ) / l );
+					const theta = Math.sqrt( l * Math.PI ) * phi;
+
+					const object = new THREE.Object3D();
+
+					object.position.setFromSphericalCoords( 800, phi, theta );
+
+					vector.copy( object.position ).multiplyScalar( 2 );
+
+					object.lookAt( vector );
+
+					targets.sphere.push( object );
+
+				}
+
+				// helix
+                for ( let i = 0, l = objects.length; i < l; i ++ ) {
+                    // We group every 2 items to pair them on the same vertical level
+                    const index = Math.floor(i / 2);
+                    
+                    // If the item is odd, shift it 180 degrees (Math.PI) to the opposite side
+                    const strandOffset = (i % 2 === 0) ? 0 : Math.PI;
+                    
+                    const theta = index * 0.175 + Math.PI + strandOffset;
+                    
+                    // Multiply by a smaller number (like 12 instead of 8) to compress the vertical height 
+                    // since we are pairing them up.
+                    const y = - ( index * 12 ) + 450;
+
+                    const object = new THREE.Object3D();
+                    object.position.setFromCylindricalCoords( 900, theta, y );
+
+                    vector.x = object.position.x * 2;
+                    vector.y = object.position.y;
+                    vector.z = object.position.z * 2;
+
+                    object.lookAt( vector );
+                    targets.helix.push( object );
+                }
+
+				// grid
+                for ( let i = 0; i < objects.length; i ++ ) {
+                    const object = new THREE.Object3D();
+
+                    // 5 columns (0 to 4). We multiply by 400 for spacing and subtract 800 to center it horizontally.
+                    object.position.x = ( ( i % 5 ) * 400 ) - 800;
+                    
+                    // 4 rows (0 to 3). We use (i / 5) % 4 to stack them vertically. 
+                    // Subtract 600 to center it vertically.
+                    object.position.y = ( - ( Math.floor( i / 5 ) % 4 ) * 400 ) + 600;
+                    
+                    // 10 layers. Since each layer holds 20 items (5x4), we divide by 20.
+                    // Multiply by -800 to push them back into the screen, add 2000 to bring the front layer closer.
+                    object.position.z = ( Math.floor( i / 20 ) ) * -800 + 2000;
+
+                    targets.grid.push( object );
+                }
+
+				//
+
+				renderer = new CSS3DRenderer();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				document.getElementById( 'container' ).appendChild( renderer.domElement );
+
+				//
+
+				controls = new TrackballControls( camera, renderer.domElement );
+				controls.minDistance = 500;
+				controls.maxDistance = 6000;
+				controls.addEventListener( 'change', render );
+
+				const buttonTable = document.getElementById( 'table' );
+				buttonTable.addEventListener( 'click', function () {
+
+					transform( targets.table, 2000 );
+
+				} );
+
+				const buttonSphere = document.getElementById( 'sphere' );
+				buttonSphere.addEventListener( 'click', function () {
+
+					transform( targets.sphere, 2000 );
+
+				} );
+
+				const buttonHelix = document.getElementById( 'helix' );
+				buttonHelix.addEventListener( 'click', function () {
+
+					transform( targets.helix, 2000 );
+
+				} );
+
+				const buttonGrid = document.getElementById( 'grid' );
+				buttonGrid.addEventListener( 'click', function () {
+
+					transform( targets.grid, 2000 );
+
+				} );
+
+				transform( targets.table, 2000 );
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize );
+
+			}
+
+			function transform( targets, duration ) {
+
+				TWEEN.removeAll();
+
+				for ( let i = 0; i < objects.length; i ++ ) {
+
+					const object = objects[ i ];
+					const target = targets[ i ];
+
+					new TWEEN.Tween( object.position )
+						.to( { x: target.position.x, y: target.position.y, z: target.position.z }, Math.random() * duration + duration )
+						.easing( TWEEN.Easing.Exponential.InOut )
+						.start();
+
+					new TWEEN.Tween( object.rotation )
+						.to( { x: target.rotation.x, y: target.rotation.y, z: target.rotation.z }, Math.random() * duration + duration )
+						.easing( TWEEN.Easing.Exponential.InOut )
+						.start();
+
+				}
+
+				new TWEEN.Tween( this )
+					.to( {}, duration * 2 )
+					.onUpdate( render )
+					.start();
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				render();
+
+			}
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				TWEEN.update();
+
+				controls.update();
+
+			}
+
+			function render() {
+
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+	</body>
+</html>
