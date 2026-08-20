@@ -96,7 +96,7 @@
                 top: 10px;
                 width: 100%;
                 text-align: center;
-                color: #ffffff; /* This makes the text white */
+                color: #ffffff;
                 z-index: 100;
                 font-family: Helvetica, sans-serif;
             }
@@ -118,13 +118,12 @@
                 width: 150px;
                 height: 8px;
                 margin: 0 10px;
-                /* This creates the exact color transition seen in Image B */
                 background: linear-gradient(to right, #EF3022, #FDCA35, #3A9F48); 
             }
 		</style>
 	</head>
 	<body>
-
+		
 		<div id="info"><a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> css3d - periodic table.</div>
 		<div id="container"></div>
 		<div id="menu">
@@ -164,7 +163,7 @@
             const targets = { table: [], sphere: [], helix: [], grid: [], pyramid: [] };
 
             let tableData = [];
-			// Be sure to replace this URL with the actual "Publish to web" CSV link from your Google Sheet
+			
 			const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQnnKcqOxYWPcOGWdnx9T8sQKwJ-nGUKCgLpIw7z3LO_sNEgMkTYpX1bYPbR9LJ3xISqKuIK0BOm_74/pub?output=csv';
 
 			Papa.parse(csvUrl, {
@@ -174,7 +173,6 @@
 					tableData = results.data;
 					console.log("Data loaded successfully:", tableData);
 					
-					// Now that data is ready, start the 3D engine
 					init();
 					animate();
 				}
@@ -195,7 +193,6 @@
                     element.className = 'element';
 
                     // 1. Determine Background Color based on Net Worth
-                    // The CSV column might have leading/trailing spaces, so we use bracket notation
                     const netWorthString = dataItem[' Net Worth '] || dataItem['Net Worth'] || "$0";
                     // Clean the string (remove '$' and ',') and convert to a float number
                     const netWorth = parseFloat(netWorthString.replace(/[^0-9.-]+/g, ""));
@@ -212,7 +209,7 @@
                         element.style.border = '1px solid rgba(100, 255, 100, 0.5)';
                     }
 
-                    // 2. Build the Card Layout (Matches Image B)
+                    // 2. Build the Card Layout
                     element.innerHTML = `
                         <div style="display: flex; justify-content: space-between; padding: 5px 10px; font-size: 12px; color: rgba(255,255,255,0.8);">
                             <span>${dataItem.Country || ''}</span>

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kasatria Assignment - Login</title>
-    <!-- Load the Google Identity Services library -->
+    
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         body {
@@ -22,7 +22,6 @@
 
     <h2>Welcome Back</h2>
     
-    <!-- Configure the Google Sign-In Button -->
     <div id="g_id_onload"
          data-client_id="275701752450-cufn28nosdtd45kq3tonk8cvecc8vm78.apps.googleusercontent.com"
          data-context="signin"
@@ -42,10 +41,9 @@
     </div>
 
     <script>
-        // This function runs when the user successfully logs in
+
         function handleCredentialResponse(response) {
             console.log("Encoded JWT ID token: " + response.credential);
-            // Redirect to your 3D Periodic Table page
             window.location.href = "table.html"; 
         }
     </script>
