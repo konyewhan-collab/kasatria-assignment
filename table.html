@@ -132,6 +132,7 @@
 			<button id="sphere">SPHERE</button>
 			<button id="helix">HELIX</button>
 			<button id="grid">GRID</button>
+			<button id="pyramid">PYRAMID</button>
 		</div>
 		<div id="legend">
             <span>LOW</span>
@@ -160,7 +161,7 @@
             let camera, scene, renderer;
             let controls;
             const objects = [];
-            const targets = { table: [], sphere: [], helix: [], grid: [] };
+            const targets = { table: [], sphere: [], helix: [], grid: [], pyramid: [] };
 
             let tableData = [];
 			// Be sure to replace this URL with the actual "Publish to web" CSV link from your Google Sheet
@@ -313,6 +314,40 @@
                     targets.grid.push( object );
                 }
 
+				// pyramid (tetrahedron)
+                let pyramidIndex = 0;
+                let layer = 0;
+
+                // Loop until we place all 200 items
+                while ( pyramidIndex < objects.length ) {
+                    // For a tetrahedron, each layer is a triangle. 
+                    // We loop through rows and columns to build that triangle.
+                    for ( let row = 0; row <= layer; row ++ ) {
+                        for ( let col = 0; col <= row; col ++ ) {
+                            if ( pyramidIndex >= objects.length ) break;
+
+                            const object = new THREE.Object3D();
+
+                            // X: Centers each row horizontally based on how many items are in it
+                            object.position.x = ( col - row / 2.0 ) * 250;
+                            
+                            // Y: Builds downwards, layer by layer. (+800 starts it near the top of the screen)
+                            object.position.y = ( -layer * 200 ) + 800;
+                            
+                            // Z: Centers the depth of the triangle so it rotates evenly
+                            object.position.z = ( row - layer * 0.66 ) * 250;
+
+                            // Calculate the rotation so the cards face outward slightly based on their position
+                            const vector = new THREE.Vector3(object.position.x * 2, object.position.y, object.position.z * 2);
+                            object.lookAt(vector);
+
+                            targets.pyramid.push( object );
+                            pyramidIndex++;
+                        }
+                    }
+                    layer++;
+                }
+
 				//
 
 				renderer = new CSS3DRenderer();
@@ -353,6 +388,11 @@
 					transform( targets.grid, 2000 );
 
 				} );
+
+				const buttonPyramid = document.getElementById( 'pyramid' );
+                buttonPyramid.addEventListener( 'click', function () {
+                    transform( targets.pyramid, 2000 );
+                } );
 
 				transform( targets.table, 2000 );
 
